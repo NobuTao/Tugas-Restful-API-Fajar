@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Buku</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+        form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        input { margin: 5px 0; padding: 8px; width: 95%; }
+        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .book-item { background: #f4f4f4; padding: 10px; margin: 5px 0; border-left: 5px solid #007bff; display: flex; justify-content: space-between; }
+        .delete-btn { background: red; color: white; border: none; padding: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>📚 Tambah Buku Baru</h2>
+    <form id="bookForm">
+        <input type="text" id="title" placeholder="Judul Buku" required><br>
+        <input type="text" id="author" placeholder="Penulis" required><br>
+        <button type="submit">Simpan Buku</button>
+    </form>
+
+    <h2>📋 Daftar Buku di Database</h2>
+    <div id="bookList">Loading data...</div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000/books";
+
+        // 1. Fungsi Ambil Data dari Backend (READ)
+        async function fetchBooks() {
+            const res = await fetch(API_URL);
+            const resData = await res.json();
+            const bookList = document.getElementById("bookList");
+            bookList.innerHTML = "";
+            
+            if (resData.data.length === 0) {
+                bookList.innerHTML = "<p>Belum ada buku.</p>";
+                return;
+            }
+
+            resData.data.forEach(book => {
+                const div = document.createElement("div");
+                div.className = "book-item";
+                div.innerHTML = `
+                    <div><strong>${book.title}</strong> - ${book.author}</div>
+                    <button class="delete-btn" onclick="deleteBook(${book.id})">Hapus</button>
+                `;
+                bookList.appendChild(div);
+            });
+        }
+
+        // 2. Fungsi Tambah Data ke Backend (CREATE)
+        document.getElementById("bookForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const title = document.getElementById("title").value;
+            const author = document.getElementById("author").value;
+
+            await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title, author, is_read: false })
+            });
+
+            document.getElementById("bookForm").reset();
+            fetchBooks(); // Refresh list buku
+        });
+
+        // 3. Fungsi Hapus Data (DELETE)
+        async function deleteBook(id) {
+            if (confirm("Yakin ingin menghapus buku ini?")) {
+                await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+                fetchBooks(); // Refresh list buku
+            }
+        }
+
+        // Jalankan saat halaman pertama kali dibuka
+        fetchBooks();
+    </script>
+</body>
+</html>
